@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Tracker</title>
+    <meta name="description" content="GPS-based fitness tracking web app">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="manifest" href="manifest.json">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 24px; font-weight: 600; }
+        #map { 
+            height: calc(100vh - 200px);
+            width: 100%;
+            min-height: 300px;
+        }
+        .controls { 
+            padding: 20px;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .stat {
+            flex: 1;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .stat-label { 
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #212529;
+        }
+        .button-container { text-align: center; }
+        button {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            min-width: 150px;
+        }
+        .start {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        .start:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76,175,80,0.4); }
+        .stop {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+        .stop:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244,67,54,0.4); }
+        .hidden { display: none; }
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .install-btn {
+            background: white;
+            color: #4CAF50;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        @media (max-width: 480px) {
+            .stats-container { flex-direction: column; }
+            .stat { margin-bottom: 10px; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏃‍♂️ Fitness Tracker</h1>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="controls">
+        <div class="stats-container">
+            <div class="stat">
+                <div class="stat-label">Distance</div>
+                <div class="stat-value"><span id="distance">0.00</span> km</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Time</div>
+                <div class="stat-value" id="timer">00:00:00</div>
+            </div>
+        </div>
+        
+        <div class="button-container">
+            <button id="start" class="start">🚀 Start Run</button>
+            <button id="stop" class="stop hidden">⏹️ Stop Run</button>
+        </div>
+    </div>
+    
+    <div id="install-prompt" class="install-prompt hidden">
+        📱 Install this app for a better experience!
+        <button id="install-btn" class="install-btn">Install</button>
+        <button onclick="this.parentElement.style.display='none'" class="install-btn">✕</button>
+    </div>
+
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+        
+        // PWA install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-prompt').classList.remove('hidden');
+        });
+        
+        document.getElementById('install-btn').addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('install-prompt').style.display = 'none';
+                });
+            }
+        });
+        
+        mapboxgl.accessToken = 'pk.eyJ1IjoicGl5dXNoZ2FyZzE4NTciLCJhIjoiY21nZDgwZGcwMWdrdjJtcjU0Mjl3ejJ3bSJ9.xj_8kpN-jL0eDWtwX22wPA';
+        
+        let map, watchId, coords = [], distance = 0, startTime, timer, isRunning = false;
+        
+        // Initialize map
+        map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0],
+            zoom: 15
+        });
+
+        map.on('load', () => {
+            map.addSource('route', {
+                type: 'geojson',
+                data: { type: 'LineString', coordinates: [] }
+            });
+            
+            map.addLayer({
+                id: 'route',
+                type: 'line',
+                source: 'route',
+                paint: { 'line-color': '#ff0000', 'line-width': 4 }
+            });
+
+            // Get user location
+            navigator.geolocation.getCurrentPosition(pos => {
+                map.setCenter([pos.coords.longitude, pos.coords.latitude]);
+            });
+        });
+
+        // Start tracking
+        document.getElementById('start').onclick = () => {
+            if (isRunning) return;
+            
+            // Vibrate if supported
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            isRunning = true;
+            document.getElementById('start').classList.add('hidden');
+            document.getElementById('stop').classList.remove('hidden');
+            
+            coords = [];
+            distance = 0;
+            startTime = Date.now();
+            
+            timer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+                const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                const s = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${h}:${m}:${s}`;
+            }, 1000);
+
+            watchId = navigator.geolocation.watchPosition(pos => {
+                const newCoord = [pos.coords.longitude, pos.coords.latitude];
+                
+                if (coords.length > 0) {
+                    const lastCoord = coords[coords.length - 1];
+                    const newDistance = getDistance(lastCoord, newCoord);
+                    if (newDistance > 0.001) { // Only add if moved more than 1 meter
+                        distance += newDistance;
+                        coords.push(newCoord);
+                        document.getElementById('distance').textContent = distance.toFixed(2);
+                        map.getSource('route').setData({ type: 'LineString', coordinates: coords });
+                        map.panTo(newCoord);
+                    }
+                } else {
+                    coords.push(newCoord);
+                    map.panTo(newCoord);
+                }
+            }, error => {
+                console.error('GPS Error:', error);
+                alert('GPS tracking failed. Please enable location services.');
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        };
+
+        // Stop tracking
+        document.getElementById('stop').onclick = () => {
+            if (!isRunning) return;
+            
+            // Vibrate if supported
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            
+            isRunning = false;
+            document.getElementById('stop').classList.add('hidden');
+            document.getElementById('start').classList.remove('hidden');
+            
+            navigator.geolocation.clearWatch(watchId);
+            clearInterval(timer);
+            
+            const duration = Math.floor((Date.now() - startTime) / 1000);
+            const h = Math.floor(duration / 3600);
+            const m = Math.floor((duration % 3600) / 60);
+            const s = duration % 60;
+            
+            const avgSpeed = distance > 0 ? (distance / (duration / 3600)).toFixed(1) : 0;
+            
+            alert(`🎉 Run Completed!\n\n📏 Distance: ${distance.toFixed(2)} km\n⏱️ Time: ${h}h ${m}m ${s}s\n🏃‍♂️ Avg Speed: ${avgSpeed} km/h`);
+        };
+
+        // Calculate distance between two coordinates
+        function getDistance([lon1, lat1], [lon2, lat2]) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+    </script>
+</body>
+</html>
