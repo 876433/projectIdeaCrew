@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Page</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="login-box">
+      <h2>Welcome back</h2>
+      <p>Track progress, sessions and recovery.</p>
+
+      <div class="tabs">
+        <button class="active">Log in</button>
+        
+      </div>
+
+      <form>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
+
+        <label for="password">Password</label>
+        <div class="password-box">
+          <input type="password" id="password" placeholder="Enter your password" required>
+          
+        </div>
+
+        <div class="options">
+         <a href="#">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn">Continue</button>
+
+        <div class="divider">or</div>
+
+        <div class="social">
+          <button type="button" class="apple">Continue with Apple</button>
+          <button type="button" class="google">Continue with Google</button>
+        </div>
+      </form>
+
+      <p class="terms">
+        By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+      </p>
+    </div>
+  </div>
+  <script>
+  const showBtn = document.querySelector('.show');
+  const password = document.getElementById('password');
+
+   showBtn.addEventListener('click', ()=> {
+    if (password.type === 'password') {
+      password.type = 'text';
+      showBtn.textContent = 'Hide';
+    } else {
+      password.type = 'password';
+      showBtn.textContent = 'Show';
+    }
+    });
+</script>
+</body>
+</html>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  background-color: #f9fafb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+
+.login-box {
+  background: #fff;
+  padding: 30px 35px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.login-box h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #222;
+}
+
+.login-box p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.tabs {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  border: none;
+  background: none;
+  font-size: 16px;
+  color: #555;
+  cursor: pointer;
+  padding-bottom: 5px;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button.active {
+  color: #000;
+  border-bottom: 2px solid #22c55e;
+  font-weight: 600;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+}
+
+.password-box {
+  position: relative;
+}
+
+.password-box .show {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  font-size: 13px;
+  color: #22c55e;
+  cursor: pointer;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.options a {
+  color: #22c55e;
+  text-decoration: none;
+}
+
+.btn {
+  width: 100%;
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn:hover {
+  background: #16a34a;
+}
+
+.divider {
+  text-align: center;
+  margin: 15px 0;
+  color: #999;
+  font-size: 13px;
+}
+
+.social button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.apple {
+  font-weight: 500;
+}
+
+.google {
+  font-weight: 500;
+}
+
+.terms {
+  font-size: 12px;
+  color: #888;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.terms a {
+  color: #22c55e;
+  text-decoration: none;
+}
